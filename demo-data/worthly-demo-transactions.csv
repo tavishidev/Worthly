@@ -1,0 +1,73 @@
+date,description,amount,transaction_type,category
+2026-05-01,Monthly salary,55000.00,credit,Salary
+2026-05-03,Freelance design project,8000.00,credit,Freelance
+2026-05-05,Apartment rent,18000.00,debit,Housing
+2026-05-07,Groceries,6200.00,debit,Food
+2026-05-09,Metro and commute,1800.00,debit,Transport
+2026-05-11,Electricity and water,2400.00,debit,Bills
+2026-05-13,Mobile and internet,1200.00,debit,Bills
+2026-05-15,Health insurance,1800.00,debit,Healthcare
+2026-05-18,Restaurant dinner,1400.00,debit,Dining
+2026-05-21,Online course,2200.00,debit,Education
+2026-05-24,Personal loan payment,4500.00,debit,Loan
+2026-05-27,Household supplies,1700.00,debit,Shopping
+2026-06-01,Monthly salary,55000.00,credit,Salary
+2026-06-03,Freelance design project,8000.00,credit,Freelance
+2026-06-05,Apartment rent,18000.00,debit,Housing
+2026-06-07,Groceries,6400.00,debit,Food
+2026-06-09,Metro and commute,1900.00,debit,Transport
+2026-06-11,Electricity and water,2300.00,debit,Bills
+2026-06-13,Mobile and internet,1200.00,debit,Bills
+2026-06-15,Health insurance,1800.00,debit,Healthcare
+2026-06-18,Restaurant dinner,1600.00,debit,Dining
+2026-06-21,Online course,2200.00,debit,Education
+2026-06-24,Personal loan payment,4500.00,debit,Loan
+2026-06-27,Household supplies,1800.00,debit,Shopping
+2026-07-01,Monthly salary,55000.00,credit,Salary
+2026-07-03,Freelance design project,8500.00,credit,Freelance
+2026-07-05,Apartment rent,18000.00,debit,Housing
+2026-07-07,Groceries,6600.00,debit,Food
+2026-07-09,Metro and commute,2000.00,debit,Transport
+2026-07-11,Electricity and water,2600.00,debit,Bills
+2026-07-13,Mobile and internet,1200.00,debit,Bills
+2026-07-15,Health insurance,1800.00,debit,Healthcare
+2026-07-18,Restaurant dinner,1500.00,debit,Dining
+2026-07-21,Online course,2400.00,debit,Education
+2026-07-24,Personal loan payment,4500.00,debit,Loan
+2026-07-27,Household supplies,1900.00,debit,Shopping
+2026-08-01,Monthly salary,55000.00,credit,Salary
+2026-08-03,Freelance design project,8000.00,credit,Freelance
+2026-08-05,Apartment rent,18000.00,debit,Housing
+2026-08-07,Groceries,6500.00,debit,Food
+2026-08-09,Metro and commute,1900.00,debit,Transport
+2026-08-11,Electricity and water,2500.00,debit,Bills
+2026-08-13,Mobile and internet,1200.00,debit,Bills
+2026-08-15,Health insurance,1800.00,debit,Healthcare
+2026-08-18,Restaurant dinner,1700.00,debit,Dining
+2026-08-21,Online course,2200.00,debit,Education
+2026-08-24,Personal loan payment,4500.00,debit,Loan
+2026-08-27,Household supplies,1800.00,debit,Shopping
+2026-09-01,Monthly salary,55000.00,credit,Salary
+2026-09-03,Freelance design project,9000.00,credit,Freelance
+2026-09-05,Apartment rent,18000.00,debit,Housing
+2026-09-07,Groceries,6800.00,debit,Food
+2026-09-09,Metro and commute,2100.00,debit,Transport
+2026-09-11,Electricity and water,2700.00,debit,Bills
+2026-09-13,Mobile and internet,1200.00,debit,Bills
+2026-09-15,Health insurance,1800.00,debit,Healthcare
+2026-09-18,Restaurant dinner,1600.00,debit,Dining
+2026-09-21,Online course,2200.00,debit,Education
+2026-09-24,Personal loan payment,4500.00,debit,Loan
+2026-09-27,Household supplies,2000.00,debit,Shopping
+2026-10-01,Monthly salary,55000.00,credit,Salary
+2026-10-03,Freelance design project,8500.00,credit,Freelance
+2026-10-05,Apartment rent,18000.00,debit,Housing
+2026-10-07,Groceries,6700.00,debit,Food
+2026-10-09,Metro and commute,2000.00,debit,Transport
+2026-10-11,Electricity and water,2500.00,debit,Bills
+2026-10-13,Mobile and internet,1200.00,debit,Bills
+2026-10-15,Health insurance,1800.00,debit,Healthcare
+2026-10-18,Restaurant dinner,1500.00,debit,Dining
+2026-10-21,Online course,2200.00,debit,Education
+2026-10-24,Personal loan payment,4500.00,debit,Loan
+2026-10-27,Household supplies,1900.00,debit,Shopping
