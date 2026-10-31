@@ -23,6 +23,7 @@ import {
   getReportById,
   WorthlyReport,
 } from "@/services/reports.service";
+import { openReportPdf } from "@/services/report-file.service";
 
 export default function ReportsScreen() {
   const styles = useAppStyles(baseStyles);
@@ -91,16 +92,24 @@ export default function ReportsScreen() {
       await loadReports();
 
       notify(
-        "Report generated",
+        "PDF report generated",
         response.mock
-          ? "An illustrative sample report was saved locally."
-          : "Your report has been generated successfully.",
+          ? "An illustrative sample report is ready."
+          : "Your report PDF was generated and saved to your Worthly account.",
         "success"
       );
+      if (!response.mock) {
+        try {
+          await openReportPdf(response.data, assessmentId);
+        } catch {
+          notify("PDF is ready", "The report was generated and stored, but this device could not open a PDF viewer.", "info");
+        }
+      }
     } catch (error: any) {
       notify(
         "Generation failed",
         error?.response?.data?.message ||
+          error?.response?.data?.detail ||
           error?.message ||
           "Unable to generate the report.",
         "error"
@@ -110,15 +119,25 @@ export default function ReportsScreen() {
     }
   };
 
-  const handleOpenReport = async (reportId: string) => {
+  const handleOpenReport = async (report: WorthlyReport) => {
+    setSelectedReport(report);
+    if (!report.assessment_id) {
+      notify("Report unavailable", "This report record has no linked assessment.", "error");
+      return;
+    }
+
     try {
-      const response = await getReportById(reportId);
-      setSelectedReport(response.data);
-      setIsMock(Boolean(response.mock));
+      const response = await getReportById(report.assessment_id, !report.report_url);
+      if (response.mock) {
+        setSelectedReport({ ...report, content: response.data.content });
+        return;
+      }
+      setSelectedReport({ ...report, report_url: report.report_url || "generated" });
+      await openReportPdf(response.data, report.assessment_id);
     } catch (error: any) {
       notify(
-        "Unable to open report",
-        error?.message || "Please try again.",
+        "Could not open report",
+        error?.response?.data?.detail || error?.message || "Check the PDF storage configuration and try again.",
         "error"
       );
     }
@@ -165,8 +184,8 @@ export default function ReportsScreen() {
         </Text>
 
         <Text style={styles.generateDescription}>
-          Generate a structured JSON report using your latest
-          six-month financial assessment.
+          Generate a downloadable PDF from your latest six-month financial
+          assessment and save it securely to your account.
         </Text>
 
         <Pressable
@@ -181,7 +200,7 @@ export default function ReportsScreen() {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.generateButtonText}>
-              +  Generate Report
+              +  Generate PDF Report
             </Text>
           )}
         </Pressable>
@@ -217,10 +236,10 @@ export default function ReportsScreen() {
             <Pressable
               key={report.id || index}
               style={styles.reportCard}
-              onPress={() => handleOpenReport(report.id)}
+              onPress={() => handleOpenReport(report)}
             >
               <View style={styles.reportIcon}>
-                <Text style={styles.reportIconText}>JSON</Text>
+                <Text style={styles.reportIconText}>{report.report_url ? "PDF" : "INFO"}</Text>
               </View>
 
               <View style={styles.reportInfo}>
@@ -233,7 +252,7 @@ export default function ReportsScreen() {
                 </Text>
 
                 <Text style={styles.reportFormat}>
-                  Format: {(report.format || "json").toUpperCase()}
+                  {report.report_url ? "PDF · Tap to open or download" : "PDF not generated · Tap to generate"}
                 </Text>
               </View>
 
@@ -262,6 +281,12 @@ export default function ReportsScreen() {
           <Text style={styles.reportDate}>
             Generated: {formatDate(selectedReport.created_at)}
           </Text>
+
+          {!selectedReport.report_url && !selectedReport.content && (
+            <Text style={styles.detailDescription}>
+              This report has not been generated yet. Tap this report to generate its PDF.
+            </Text>
+          )}
 
           {selectedReport.content?.summary && (
             <Text style={styles.detailDescription}>
@@ -303,11 +328,11 @@ export default function ReportsScreen() {
             </View>
           )}
 
-          {!selectedReport.content && (
+          {selectedReport.report_url && !selectedReport.content && (
             <Text style={styles.detailDescription}>
-              This report was retrieved successfully. Its detailed
-              content format will be displayed once aligned with
-              your backend response schema.
+              {selectedReport.report_url
+                ? "Your PDF includes your Worthly Pulse score, data coverage, transaction summary, assessment factors and the methodology disclaimer."
+                : "This PDF includes your Worthly Pulse score, data coverage, transaction summary, assessment factors and the methodology disclaimer."}
             </Text>
           )}
 

@@ -1,5 +1,5 @@
 import { useAppStyles, useAppTheme } from "@/components/app-theme";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { MotionPressable as Pressable, MotionReveal, ScreenEntrance } from "@/co
 import { useFeedback } from "@/components/feedback";
 import { getPostAuthRoute, signIn } from "../services/auth.service";
 import { COLORS } from "../constants/colors";
+import { checkBackendConnection, isBackendConfigured } from "@/services/api";
 
 export default function LoginScreen() {
   const styles = useAppStyles(baseStyles);
@@ -26,10 +27,17 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const isPreviewMode = !(
-    process.env.EXPO_PUBLIC_SUPABASE_URL &&
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-  );
+  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
+  const isPreviewMode = !isBackendConfigured();
+
+  useEffect(() => {
+    if (isPreviewMode) return;
+    let active = true;
+    checkBackendConnection().then((connected) => {
+      if (active) setBackendStatus(connected ? "online" : "offline");
+    });
+    return () => { active = false; };
+  }, [isPreviewMode]);
 
   const handleLogin = async () => {
     const cleanEmail = email.trim();
@@ -51,11 +59,22 @@ export default function LoginScreen() {
 
       await signIn(cleanEmail, password);
 
+      let nextRoute;
+      try {
+        nextRoute = await getPostAuthRoute();
+      } catch (error: any) {
+        if ([401, 403].includes(error?.response?.status)) {
+          throw new Error("Your credentials were accepted, but the backend rejected the session on a protected request. Check FastAPI bearer-token validation.");
+        }
+        throw new Error("You are signed in, but Worthly could not load your consent/profile from the backend. Please retry.");
+      }
       notify("Login successful", "Welcome back to Worthly.", "success");
-      router.replace(await getPostAuthRoute());
+      router.replace(nextRoute);
     } catch (error: any) {
       notify(
-        "Login failed",
+        error?.message?.startsWith("You are signed in") || error?.message?.startsWith("Your credentials were accepted")
+          ? "Unable to finish sign-in"
+          : "Login failed",
         error?.message || "Something went wrong. Please try again.",
         "error"
       );
@@ -89,6 +108,11 @@ export default function LoginScreen() {
               This demo stores a sample account on this device. Preview sign-in does not verify a password or create a real account.
             </Text>
           </View>
+        )}
+        {!isPreviewMode && (
+          <Text style={{ color: backendStatus === "online" ? "#16845B" : backendStatus === "offline" ? "#B54737" : colors.muted, fontSize: 12, textAlign: "center", marginBottom: 12 }}>
+            {backendStatus === "online" ? "Backend connected" : backendStatus === "offline" ? "Backend unreachable — check server, LAN, and CORS" : "Connecting to backend…"}
+          </Text>
         )}
 
         <MotionReveal style={{ width: "100%" }} delay={80}>

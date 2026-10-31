@@ -1,3 +1,4 @@
+import { isBackendConfigured } from "./api";
 
 export interface DashboardSummary {
   pulse_score: number | null;
@@ -10,14 +11,6 @@ export interface DashboardSummary {
   last_assessment_date: string | null;
 }
 
-function isBackendConfigured() {
-  return Boolean(
-    process.env.EXPO_PUBLIC_SUPABASE_URL &&
-      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.EXPO_PUBLIC_API_URL
-  );
-}
-
 export async function getDashboardSummary(): Promise<{
   success: boolean;
   mock?: boolean;
@@ -25,12 +18,32 @@ export async function getDashboardSummary(): Promise<{
 }> {
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-    const response = await api.get("/dashboard/summary");
-
-    // The API contract wraps the dashboard fields inside "data".
+    const [analysisResponse, historyResponse] = await Promise.all([
+      api.get("/analysis/transactions"),
+      api.get("/assessment/history"),
+    ]);
+    const analysisBody = analysisResponse.data?.data ?? analysisResponse.data ?? {};
+    const analysis = analysisBody?.analysis ?? analysisBody ?? {};
+    const historyBody = historyResponse.data?.data ?? historyResponse.data;
+    const history = Array.isArray(historyBody) ? historyBody : historyBody?.history ?? historyBody?.assessments ?? [];
+    const latestRecord = history[0]?.assessment ?? history[0] ?? null;
+    const months = Math.max(1, Array.isArray(analysis.monthly_income) ? analysis.monthly_income.length : Number(latestRecord?.data_coverage_months ?? 1));
+    const income = Number(analysis.average_monthly_income_rupees ?? (Number(analysis.total_income_rupees ?? 0) / months));
+    const totalExpenses = Number(analysis.total_expenses_rupees ?? Number(analysis.total_expenses ?? 0));
+    const expenses = Number(analysis.average_monthly_expenses_rupees ?? (totalExpenses / months));
+    const latestScore = Number(latestRecord?.pulse_score ?? latestRecord?.score);
     return {
-      success: response.data.success,
-      data: response.data.data,
+      success: true,
+      data: {
+        pulse_score: Number.isFinite(latestScore) ? latestScore : null,
+        score_label: latestRecord?.score_label ?? (Number.isFinite(latestScore) ? (latestScore >= 80 ? "Strong" : latestScore >= 60 ? "Good" : latestScore >= 40 ? "Developing" : "Needs attention") : "Awaiting assessment"),
+        monthly_income: income,
+        monthly_expenses: expenses,
+        monthly_savings: Number(analysis.average_monthly_savings_rupees ?? (Number(analysis.net_savings_rupees ?? 0) / months)),
+        savings_ratio: Number(analysis.savings_ratio_percent ?? (income > 0 ? (income - expenses) / income * 100 : 0)),
+        score_change: 0,
+        last_assessment_date: latestRecord?.created_at ?? null,
+      },
     };
   }
 

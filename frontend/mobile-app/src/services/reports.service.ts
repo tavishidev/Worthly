@@ -1,5 +1,6 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isBackendConfigured } from "./api";
 
 const MOCK_REPORTS_KEY = "worthly_mock_reports";
 
@@ -9,16 +10,11 @@ export interface WorthlyReport {
   format: string;
   created_at: string;
   assessment_id?: string;
+  report_url?: string | null;
   content?: any;
 }
 
-function isBackendConfigured() {
-  return Boolean(
-    process.env.EXPO_PUBLIC_SUPABASE_URL &&
-      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.EXPO_PUBLIC_API_URL
-  );
-}
+export type ReportPdf = ArrayBuffer | Uint8Array;
 
 async function getMockReports(): Promise<WorthlyReport[]> {
   const saved = await AsyncStorage.getItem(MOCK_REPORTS_KEY);
@@ -32,16 +28,18 @@ export async function generateReport(assessmentId: string) {
 
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-
-    const response = await api.post("/reports/generate", {
-      assessment_id: assessmentId,
-      format: "json",
-    });
+    // This endpoint generates the actual PDF, stores it in the private bucket,
+    // and creates/updates the user's report row. The POST endpoint only creates
+    // an empty metadata row, which is why it is not used here.
+    const response = await api.get(
+      `/reports/${encodeURIComponent(assessmentId)}/pdf`,
+      { responseType: "arraybuffer", timeout: 60_000 }
+    );
 
     return {
       success: true,
-      mock: false,
-      data: response.data?.data ?? response.data,
+      mock: false as const,
+      data: response.data as ReportPdf,
     };
   }
 
@@ -75,7 +73,7 @@ export async function generateReport(assessmentId: string) {
 
   return {
     success: true,
-    mock: true,
+    mock: true as const,
     data: report,
   };
 }
@@ -83,7 +81,7 @@ export async function generateReport(assessmentId: string) {
 export async function getReports() {
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-    const response = await api.get("/reports");
+    const response = await api.get("/reports/me");
 
     const data = response.data?.data ?? response.data;
     const reports = Array.isArray(data)
@@ -94,38 +92,40 @@ export async function getReports() {
 
     return {
       success: true,
-      mock: false,
+      mock: false as const,
       data: reports,
     };
   }
 
   return {
     success: true,
-    mock: true,
+    mock: true as const,
     data: await getMockReports(),
   };
 }
 
-export async function getReportById(reportId: string) {
-  if (!reportId) {
-    throw new Error("A report ID is required.");
+export async function getReportById(assessmentId: string, generateIfMissing = false) {
+  if (!assessmentId) {
+    throw new Error("An assessment ID is required to retrieve its report.");
   }
 
   if (isBackendConfigured()) {
     const { api } = await import("./api");
+    const path = generateIfMissing ? "pdf" : "download";
     const response = await api.get(
-      `/reports/${encodeURIComponent(reportId)}`
+      `/reports/${encodeURIComponent(assessmentId)}/${path}`,
+      { responseType: "arraybuffer", timeout: 60_000 }
     );
 
     return {
       success: true,
-      mock: false,
-      data: response.data?.data ?? response.data,
+      mock: false as const,
+      data: response.data as ReportPdf,
     };
   }
 
   const reports = await getMockReports();
-  const report = reports.find((item) => item.id === reportId);
+  const report = reports.find((item) => item.assessment_id === assessmentId);
 
   if (!report) {
     throw new Error("Report not found.");
@@ -133,7 +133,7 @@ export async function getReportById(reportId: string) {
 
   return {
     success: true,
-    mock: true,
+    mock: true as const,
     data: report,
   };
 }

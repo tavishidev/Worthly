@@ -96,7 +96,7 @@ export default function InsightsScreen() {
         "Insights generated",
         response.mock
           ? "Illustrative sample insights have been generated."
-          : "Your AI insights have been generated successfully.",
+          : "Your insights were updated from your transaction history.",
         "success"
       );
     } catch (error: any) {
@@ -151,11 +151,11 @@ export default function InsightsScreen() {
       >
       <BrandLockup compact />
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>WORTHLY · INTELLIGENCE</Text>
-        <Text style={styles.heading}>AI Insights</Text>
+        <Text style={styles.eyebrow}>WORTHLY · PERSONALIZED OVERVIEW</Text>
+        <Text style={styles.heading}>Financial Insights</Text>
         <Text style={styles.subtitle}>
-          Understand your financial habits and discover opportunities
-          to improve your financial wellness.
+          Clear observations based on your recorded income, spending and cash flow.
+          These are educational indicators, not lending advice.
         </Text>
       </View>
 
@@ -168,7 +168,7 @@ export default function InsightsScreen() {
 
         <Text style={styles.assessmentDescription}>
           {assessmentId
-            ? "Your latest assessment is ready to generate insights."
+            ? "Your latest assessment and transaction history are ready to review."
             : "Generate your six-month assessment before requesting insights."}
         </Text>
 
@@ -211,7 +211,7 @@ export default function InsightsScreen() {
         ) : (
           <View style={styles.generateButtonContent}>
             <Ionicons name="sparkles-outline" size={17} color="#FFFFFF" />
-            <Text style={styles.generateButtonText}>Generate AI Insights</Text>
+            <Text style={styles.generateButtonText}>Refresh Financial Insights</Text>
           </View>
         )}
       </Pressable>
@@ -219,8 +219,8 @@ export default function InsightsScreen() {
       {isMock && insights.length > 0 && (
         <View style={styles.mockNotice}>
           <Text style={styles.mockNoticeText}>
-            SAMPLE MODE: These are illustrative insights, not actual
-            AI-generated financial recommendations.
+            SAMPLE MODE: These examples are illustrative and are not based on
+            your connected transaction history.
           </Text>
         </View>
       )}
@@ -232,8 +232,8 @@ export default function InsightsScreen() {
           <Ionicons name="sparkles-outline" size={30} color={colors.primary} />
           <Text style={styles.emptyTitle}>No insights yet</Text>
           <Text style={styles.emptyDescription}>
-            Generate insights using your latest financial assessment
-            to see personalized financial guidance here.
+            Upload transactions and generate an assessment to see observations
+            based on your income and spending patterns.
           </Text>
         </View>
       ) : (

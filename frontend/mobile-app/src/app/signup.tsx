@@ -1,5 +1,5 @@
 import { useAppStyles, useAppTheme } from "@/components/app-theme";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { MotionPressable as Pressable, MotionReveal, ScreenEntrance } from "@/co
 import { useFeedback } from "@/components/feedback";
 import { getPostAuthRoute, signUp } from "../services/auth.service";
 import { COLORS } from "../constants/colors";
+import { checkBackendConnection, isBackendConfigured } from "@/services/api";
 
 export default function SignupScreen() {
   const styles = useAppStyles(baseStyles);
@@ -30,10 +31,17 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const isPreviewMode = !(
-    process.env.EXPO_PUBLIC_SUPABASE_URL &&
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-  );
+  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
+  const isPreviewMode = !isBackendConfigured();
+
+  useEffect(() => {
+    if (isPreviewMode) return;
+    let active = true;
+    checkBackendConnection().then((connected) => {
+      if (active) setBackendStatus(connected ? "online" : "offline");
+    });
+    return () => { active = false; };
+  }, [isPreviewMode]);
 
   const handleSignup = async () => {
     const cleanName = fullName.trim();
@@ -114,6 +122,11 @@ export default function SignupScreen() {
               Your sample account stays on this device. Preview mode is for exploring the interface and does not provide real account security.
             </Text>
           </View>
+        )}
+        {!isPreviewMode && (
+          <Text style={{ color: backendStatus === "online" ? "#16845B" : backendStatus === "offline" ? "#B54737" : colors.muted, fontSize: 12, textAlign: "center", marginBottom: 12 }}>
+            {backendStatus === "online" ? "Backend connected" : backendStatus === "offline" ? "Backend unreachable — check server, LAN, and CORS" : "Connecting to backend…"}
+          </Text>
         )}
         <View style={styles.header}>
           <BrandLockup />

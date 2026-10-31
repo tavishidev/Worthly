@@ -1,5 +1,6 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isBackendConfigured } from "./api";
 
 const MOCK_ASSESSMENT_KEY = "worthly_mock_assessments";
 
@@ -55,22 +56,65 @@ const MOCK_FACTORS: AssessmentFactor[] = [
   },
 ];
 
-function isBackendConfigured() {
-  return Boolean(
-    process.env.EXPO_PUBLIC_SUPABASE_URL &&
-      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.EXPO_PUBLIC_API_URL
-  );
+function unwrapResponse(response: any) {
+  return response?.data?.data ?? response?.data ?? response;
+}
+
+function scoreLabel(score: number) {
+  if (score >= 80) return "Strong";
+  if (score >= 60) return "Good";
+  if (score >= 40) return "Developing";
+  return "Needs attention";
+}
+
+function normalizeAssessment(record: any): Assessment | null {
+  const assessment = record?.assessment ?? record;
+  const id = assessment?.id ?? assessment?.assessment_id ?? record?.assessment_id;
+  if (!id) return null;
+
+  const score = Number(assessment?.pulse_score ?? assessment?.score ?? 0);
+  const factors = record?.factors ?? assessment?.factors ?? [];
+
+  return {
+    id: String(id),
+    pulse_score: score,
+    score_label: assessment?.score_label ?? scoreLabel(score),
+    period_months: Number(assessment?.data_coverage_months ?? assessment?.period_months ?? 6),
+    created_at: assessment?.created_at ?? "",
+    factors: Array.isArray(factors) ? factors.map((factor: any) => ({
+      name: factor.factor_name ?? factor.name ?? "Financial factor",
+      score: Number(factor.factor_score ?? factor.score ?? 0),
+      description: factor.explanation ?? factor.description ?? "Based on the transaction history provided.",
+      confidence: factor.confidence,
+    })) : [],
+    coverage_percent: assessment?.data_coverage_months == null
+      ? undefined
+      : Math.min(100, Number(assessment.data_coverage_months) / 6 * 100),
+    methodology_version: assessment?.model_version,
+  };
+}
+
+function extractHistory(response: any): Assessment[] {
+  const body = unwrapResponse(response);
+  const records = Array.isArray(body) ? body : body?.history ?? body?.assessments ?? [];
+  return records.map(normalizeAssessment).filter((item: Assessment | null): item is Assessment => item !== null);
 }
 
 export async function generateAssessment(periodMonths = 6) {
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-    const response = await api.post("/assessments", {
-      period_months: periodMonths,
+    const response = await api.post("/assessment/generate");
+    const body = unwrapResponse(response);
+    const assessment = normalizeAssessment({
+      ...(body?.assessment ?? {}),
+      id: body?.assessment_id ?? body?.assessment?.id,
     });
-
-    return response.data;
+    return {
+      success: true,
+      mock: false,
+      message: body?.message ?? `Generated an assessment from ${assessment?.period_months ?? periodMonths} months of transactions.`,
+      data: assessment,
+    };
   }
 
   const saved = await AsyncStorage.getItem(MOCK_ASSESSMENT_KEY);
@@ -103,8 +147,9 @@ export async function generateAssessment(periodMonths = 6) {
 export async function getLatestAssessment() {
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-    const response = await api.get("/assessments/latest");
-    return response.data;
+    const response = await api.get("/assessment/history");
+    const history = extractHistory(response);
+    return { success: true, mock: false, data: history[0] ?? null };
   }
 
   const saved = await AsyncStorage.getItem(MOCK_ASSESSMENT_KEY);
@@ -120,8 +165,8 @@ export async function getLatestAssessment() {
 export async function getAssessmentHistory() {
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-    const response = await api.get("/assessments/history");
-    return response.data;
+    const response = await api.get("/assessment/history");
+    return { success: true, mock: false, data: extractHistory(response) };
   }
 
   const saved = await AsyncStorage.getItem(MOCK_ASSESSMENT_KEY);

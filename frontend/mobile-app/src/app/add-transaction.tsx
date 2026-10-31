@@ -15,6 +15,7 @@ import { BrandLockup } from "@/components/brand-lockup";
 import { useFeedback } from "@/components/feedback";
 import { MotionPressable as TouchableOpacity, ScreenEntrance } from "@/components/motion";
 import { COLORS } from "@/constants/colors";
+import { isBackendConfigured } from "@/services/api";
 import {
   addTransaction,
   TransactionType,
@@ -76,6 +77,7 @@ export default function AddTransactionScreen() {
   const [date, setDate] = useState(getTodayDate());
   const [category, setCategory] = useState("Food");
   const [loading, setLoading] = useState(false);
+  const backendConfigured = isBackendConfigured();
 
   async function handleSave() {
     const cleanAmount = amount.trim();
@@ -127,11 +129,15 @@ export default function AddTransactionScreen() {
       );
       router.replace("/transactions");
     } catch (error: any) {
+      const errorMessage = error?.response?.status === 404
+        ? "The running FastAPI server still needs the manual transaction endpoint. Pull or merge the backend transaction branch, then restart FastAPI."
+        : error?.response?.data?.detail ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Please try again.";
       notify(
         "Could not save transaction",
-        error?.response?.data?.message ||
-          error?.message ||
-          "Please try again.",
+        errorMessage,
         "error"
       );
     } finally {
@@ -269,7 +275,9 @@ export default function AddTransactionScreen() {
         </TouchableOpacity>
 
         <Text style={styles.note}>
-          Your entries are stored locally while the backend is not configured.
+          {backendConfigured
+            ? "Saving sends this transaction to FastAPI and your Worthly account."
+            : "Preview only. Entries are stored on this device and won’t sync to your account."}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

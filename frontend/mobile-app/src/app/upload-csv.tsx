@@ -103,10 +103,19 @@ export default function UploadCsvScreen() {
         "success"
       );
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Please try again.";
+      const detail = error?.response?.data?.detail;
+      const message = typeof detail === "string"
+        ? detail
+        : Array.isArray(detail)
+          ? detail.map((issue: any) => {
+              const field = Array.isArray(issue?.loc)
+                ? issue.loc.filter((part: unknown) => part !== "body").join(".")
+                : "CSV file";
+              return `${field}: ${issue?.msg || "is invalid"}`;
+            }).join("; ")
+          : error?.response?.data?.message ||
+            error?.message ||
+            "Please try again.";
 
       notify("Upload failed", message, "error");
     } finally {

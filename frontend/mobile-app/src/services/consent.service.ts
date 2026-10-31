@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { emitAccessChange } from "./access-events";
+import { isBackendConfigured } from "./api";
 
 const MOCK_CONSENT_KEY = "worthly_mock_consent";
 const LEGACY_MOCK_CONSENT_KEY = "creditpulse_mock_consent";
@@ -9,23 +10,22 @@ let consentCache: { record: any; checkedAt: number } | null = null;
 export interface ConsentPayload {
   consent_given: boolean;
   purpose: string;
-  data_categories: string[];
-}
-
-function isBackendConfigured() {
-  return Boolean(
-    process.env.EXPO_PUBLIC_SUPABASE_URL &&
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY &&
-    process.env.EXPO_PUBLIC_API_URL
-  );
+  data_categories?: string[];
+  consent_version?: string;
 }
 
 export async function saveConsent(payload: ConsentPayload) {
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-    const response = await api.post("/consents", payload);
+    const response = await api.post("/consents/", {
+      consent_given: payload.consent_given,
+      purpose: payload.data_categories?.length
+        ? `${payload.purpose} (categories: ${payload.data_categories.join(", ")})`
+        : payload.purpose,
+      consent_version: "1.0",
+    });
     consentCache = {
-      record: { ...payload, status: "active", saved_at: new Date().toISOString() },
+      record: { ...payload, status: payload.consent_given ? "active" : "revoked", saved_at: new Date().toISOString() },
       checkedAt: Date.now(),
     };
     emitAccessChange();
@@ -60,7 +60,11 @@ export async function getConsent() {
     try {
       const response = await api.get("/consents/me");
       const body = response.data;
-      const record = body?.data?.consent ?? body?.data ?? body?.consent ?? body;
+      const value = body?.data?.consent ?? body?.data ?? body?.consent ?? body;
+      const records = Array.isArray(value) ? value : value?.consents;
+      const record = Array.isArray(records)
+        ? records.find((item: any) => item?.consent_given) ?? records[0] ?? null
+        : value;
       consentCache = { record, checkedAt: Date.now() };
       return record;
     } catch (error: any) {
@@ -101,10 +105,10 @@ export function clearConsentCache() {
 export async function revokeConsent() {
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-    const response = await api.post("/consents", {
+    const response = await api.post("/consents/", {
       consent_given: false,
       purpose: "Financial wellness assessment",
-      data_categories: [],
+      consent_version: "1.0",
     } satisfies ConsentPayload);
     consentCache = {
       record: { consent_given: false, status: "revoked", data_categories: [] },

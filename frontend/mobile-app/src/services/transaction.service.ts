@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isBackendConfigured } from "./api";
 
 const MOCK_TRANSACTIONS_KEY = "creditpulse_mock_transactions";
 
@@ -10,14 +11,6 @@ export interface TransactionPayload {
   amount_paise: number;
   transaction_type: TransactionType;
   category: string;
-}
-
-function isBackendConfigured() {
-  return Boolean(
-    process.env.EXPO_PUBLIC_SUPABASE_URL &&
-      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.EXPO_PUBLIC_API_URL
-  );
 }
 
 export async function addTransaction(payload: TransactionPayload) {
@@ -54,7 +47,9 @@ export async function addTransaction(payload: TransactionPayload) {
 export async function getTransactions() {
   if (isBackendConfigured()) {
     const { api } = await import("./api");
-    const response = await api.get("/transactions?page=1&limit=20");
+    const response = await api.get("/transactions", {
+      params: { page: 1, limit: 100 },
+    });
     return response.data;
   }
 

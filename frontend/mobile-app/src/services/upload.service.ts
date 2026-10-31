@@ -1,5 +1,6 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isBackendConfigured } from "./api";
 
 const MOCK_UPLOADS_KEY = "worthly_mock_uploads";
 
@@ -8,14 +9,6 @@ export interface CsvFile {
   name: string;
   mimeType?: string | null;
   size?: number;
-}
-
-function isBackendConfigured() {
-  return Boolean(
-    process.env.EXPO_PUBLIC_SUPABASE_URL &&
-      process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.EXPO_PUBLIC_API_URL
-  );
 }
 
 export async function uploadTransactionsCsv(file: CsvFile) {
@@ -33,10 +26,11 @@ export async function uploadTransactionsCsv(file: CsvFile) {
       } as any
     );
 
-    const response = await api.post("/transactions/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    const response = await api.post("/transactions/upload/csv", formData, {
+      // The shared Axios client defaults to JSON. Override that for FormData
+      // so Axios leaves the body intact and the native adapter adds the
+      // multipart boundary; otherwise FastAPI sees no `file` field (422).
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
     return response.data;
@@ -68,11 +62,8 @@ export async function uploadTransactionsCsv(file: CsvFile) {
 
 export async function getUploadStatus(uploadId: string) {
   if (isBackendConfigured()) {
-    const { api } = await import("./api");
-    const response = await api.get(
-      `/transactions/upload/${encodeURIComponent(uploadId)}`
-    );
-    return response.data;
+    void uploadId;
+    throw new Error("Upload status lookup is not available in the FastAPI contract yet.");
   }
 
   const savedUploads = await AsyncStorage.getItem(MOCK_UPLOADS_KEY);
